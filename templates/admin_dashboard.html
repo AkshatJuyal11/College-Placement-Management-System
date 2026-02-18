@@ -1,0 +1,445 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard - CPMS</title>
+    
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/css/style.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="/">CPMS - Admin</a>
+            <div class="ms-auto">
+                <button class="btn btn-danger" onclick="Utils.logout()">Logout</button>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container-fluid py-4">
+        <div class="dashboard-header">
+            <h2>Admin Dashboard</h2>
+            <p class="text-secondary mb-0">Monitor and manage placement activities</p>
+        </div>
+
+        <!-- Stats Overview -->
+        <div class="dashboard-grid mb-4" id="statsCards">
+            <!-- Stats will be loaded here -->
+        </div>
+
+        <!-- Tabs -->
+        <ul class="nav nav-tabs mb-4">
+            <li class="nav-item">
+                <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#overview">Overview</button>
+            </li>
+            <li class="nav-item">
+                <button class="nav-link" data-bs-toggle="tab" data-bs-target="#students">Students</button>
+            </li>
+            <li class="nav-item">
+                <button class="nav-link" data-bs-toggle="tab" data-bs-target="#companies">Companies</button>
+            </li>
+            <li class="nav-item">
+                <button class="nav-link" data-bs-toggle="tab" data-bs-target="#jobs">Job Drives</button>
+            </li>
+            <li class="nav-item">
+                <button class="nav-link" data-bs-toggle="tab" data-bs-target="#reports">Reports</button>
+            </li>
+        </ul>
+
+        <div class="tab-content">
+            <!-- Overview Tab -->
+            <div class="tab-pane fade show active" id="overview">
+                <div class="row">
+                    <div class="col-md-6 mb-4">
+                        <div class="card">
+                            <div class="card-header">
+                                <h4 class="mb-0">Applications by Status</h4>
+                            </div>
+                            <div class="card-body">
+                                <canvas id="statusChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6 mb-4">
+                        <div class="card">
+                            <div class="card-header">
+                                <h4 class="mb-0">Branch-wise Placement</h4>
+                            </div>
+                            <div class="card-body">
+                                <canvas id="branchChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Students Tab -->
+            <div class="tab-pane fade" id="students">
+                <div class="card">
+                    <div class="card-header">
+                        <h4 class="mb-0">All Students</h4>
+                    </div>
+                    <div class="card-body">
+                        <div id="studentsList">
+                            <p class="text-center">Loading...</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Companies Tab -->
+            <div class="tab-pane fade" id="companies">
+                <div class="card">
+                    <div class="card-header">
+                        <h4 class="mb-0">All Companies</h4>
+                    </div>
+                    <div class="card-body">
+                        <div id="companiesList">
+                            <p class="text-center">Loading...</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Jobs Tab -->
+            <div class="tab-pane fade" id="jobs">
+                <div class="card">
+                    <div class="card-header">
+                        <h4 class="mb-0">All Job Drives</h4>
+                    </div>
+                    <div class="card-body">
+                        <div id="jobsList">
+                            <p class="text-center">Loading...</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Reports Tab -->
+            <div class="tab-pane fade" id="reports">
+                <div class="row">
+                    <div class="col-md-6 mb-4">
+                        <div class="card">
+                            <div class="card-header">
+                                <h4 class="mb-0">Company-wise Selections</h4>
+                            </div>
+                            <div class="card-body">
+                                <div id="companySelections">
+                                    <p class="text-center">Loading...</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6 mb-4">
+                        <div class="card">
+                            <div class="card-header">
+                                <h4 class="mb-0">Branch Statistics</h4>
+                            </div>
+                            <div class="card-body">
+                                <div id="branchStats">
+                                    <p class="text-center">Loading...</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="/static/js/main.js"></script>
+    <script>
+        if (!Utils.checkAuth() || TokenManager.getRole() !== 'admin') {
+            window.location.href = '/login';
+        }
+
+        let statusChart, branchChart;
+
+        // Load all data on page load
+        loadReports();
+
+        async function loadReports() {
+            try {
+                const reports = await API.get('/admin/reports');
+                
+                // Update stats cards
+                const statsCards = document.getElementById('statsCards');
+                statsCards.innerHTML = `
+                    <div class="stat-card">
+                        <h3>${reports.overview.total_students}</h3>
+                        <p>Total Students</p>
+                    </div>
+                    <div class="stat-card">
+                        <h3>${reports.overview.placed_students}</h3>
+                        <p>Placed Students</p>
+                    </div>
+                    <div class="stat-card">
+                        <h3>${reports.overview.placement_percentage}%</h3>
+                        <p>Placement Rate</p>
+                    </div>
+                    <div class="stat-card">
+                        <h3>${reports.overview.total_companies}</h3>
+                        <p>Companies</p>
+                    </div>
+                    <div class="stat-card">
+                        <h3>${reports.overview.total_jobs}</h3>
+                        <p>Job Drives</p>
+                    </div>
+                    <div class="stat-card">
+                        <h3>${reports.overview.total_applications}</h3>
+                        <p>Applications</p>
+                    </div>
+                `;
+                
+                // Status Chart
+                const statusLabels = reports.applications_by_status.map(s => s._id);
+                const statusData = reports.applications_by_status.map(s => s.count);
+                
+                const statusCtx = document.getElementById('statusChart').getContext('2d');
+                if (statusChart) statusChart.destroy();
+                statusChart = new Chart(statusCtx, {
+                    type: 'doughnut',
+                    data: {
+                        labels: statusLabels,
+                        datasets: [{
+                            data: statusData,
+                            backgroundColor: ['#3b82f6', '#10b981', '#ef4444']
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        plugins: {
+                            legend: {
+                                position: 'bottom'
+                            }
+                        }
+                    }
+                });
+                
+                // Branch Chart
+                const branchLabels = reports.branch_wise_stats.map(b => b._id);
+                const branchPlaced = reports.branch_wise_stats.map(b => b.placed);
+                const branchTotal = reports.branch_wise_stats.map(b => b.total);
+                
+                const branchCtx = document.getElementById('branchChart').getContext('2d');
+                if (branchChart) branchChart.destroy();
+                branchChart = new Chart(branchCtx, {
+                    type: 'bar',
+                    data: {
+                        labels: branchLabels,
+                        datasets: [
+                            {
+                                label: 'Placed',
+                                data: branchPlaced,
+                                backgroundColor: '#10b981'
+                            },
+                            {
+                                label: 'Total',
+                                data: branchTotal,
+                                backgroundColor: '#3b82f6'
+                            }
+                        ]
+                    },
+                    options: {
+                        responsive: true,
+                        plugins: {
+                            legend: {
+                                position: 'bottom'
+                            }
+                        },
+                        scales: {
+                            y: {
+                                beginAtZero: true
+                            }
+                        }
+                    }
+                });
+                
+                // Company Selections
+                const companySelections = document.getElementById('companySelections');
+                if (reports.company_wise_selections.length === 0) {
+                    companySelections.innerHTML = '<p class="text-secondary">No selections yet</p>';
+                } else {
+                    companySelections.innerHTML = `
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>Company</th>
+                                    <th>Selections</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${reports.company_wise_selections.map(c => `
+                                    <tr>
+                                        <td>${c._id}</td>
+                                        <td><span class="badge bg-success">${c.count}</span></td>
+                                    </tr>
+                                `).join('')}
+                            </tbody>
+                        </table>
+                    `;
+                }
+                
+                // Branch Stats
+                const branchStats = document.getElementById('branchStats');
+                branchStats.innerHTML = `
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Branch</th>
+                                <th>Total</th>
+                                <th>Placed</th>
+                                <th>Rate</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${reports.branch_wise_stats.map(b => {
+                                const rate = b.total > 0 ? ((b.placed / b.total) * 100).toFixed(1) : 0;
+                                return `
+                                    <tr>
+                                        <td>${b._id}</td>
+                                        <td>${b.total}</td>
+                                        <td>${b.placed}</td>
+                                        <td>${rate}%</td>
+                                    </tr>
+                                `;
+                            }).join('')}
+                        </tbody>
+                    </table>
+                `;
+                
+            } catch (error) {
+                Utils.showToast(error.message, 'danger');
+            }
+        }
+
+        async function loadStudents() {
+            try {
+                const students = await API.get('/admin/students');
+                const studentsList = document.getElementById('studentsList');
+                
+                if (students.length === 0) {
+                    studentsList.innerHTML = '<p class="text-center text-secondary">No students registered</p>';
+                    return;
+                }
+                
+                studentsList.innerHTML = `
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Name</th>
+                                <th>Roll No</th>
+                                <th>Branch</th>
+                                <th>CGPA</th>
+                                <th>Resume</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${students.map(s => `
+                                <tr>
+                                    <td>${s.name || 'N/A'}</td>
+                                    <td>${s.roll_no || 'N/A'}</td>
+                                    <td>${s.branch || 'N/A'}</td>
+                                    <td>${s.cgpa || 'N/A'}</td>
+                                    <td>${s.resume_url ? '✅' : '❌'}</td>
+                                    <td>${s.placed ? '<span class="badge bg-success">Placed</span>' : '<span class="badge bg-warning">Not Placed</span>'}</td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                `;
+            } catch (error) {
+                document.getElementById('studentsList').innerHTML = `<p class="text-danger">${error.message}</p>`;
+            }
+        }
+
+        async function loadCompanies() {
+            try {
+                const companies = await API.get('/admin/companies');
+                const companiesList = document.getElementById('companiesList');
+                
+                if (companies.length === 0) {
+                    companiesList.innerHTML = '<p class="text-center text-secondary">No companies registered</p>';
+                    return;
+                }
+                
+                companiesList.innerHTML = `
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Company Name</th>
+                                <th>Contact Person</th>
+                                <th>Email</th>
+                                <th>Phone</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${companies.map(c => `
+                                <tr>
+                                    <td>${c.company_name || 'N/A'}</td>
+                                    <td>${c.contact_person || 'N/A'}</td>
+                                    <td>${c.email || 'N/A'}</td>
+                                    <td>${c.phone || 'N/A'}</td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                `;
+            } catch (error) {
+                document.getElementById('companiesList').innerHTML = `<p class="text-danger">${error.message}</p>`;
+            }
+        }
+
+        async function loadJobs() {
+            try {
+                const jobs = await API.get('/admin/jobs');
+                const jobsList = document.getElementById('jobsList');
+                
+                if (jobs.length === 0) {
+                    jobsList.innerHTML = '<p class="text-center text-secondary">No job drives posted</p>';
+                    return;
+                }
+                
+                jobsList.innerHTML = `
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Company</th>
+                                <th>Job Title</th>
+                                <th>Min CGPA</th>
+                                <th>Branches</th>
+                                <th>Posted On</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${jobs.map(j => `
+                                <tr>
+                                    <td>${j.company_name || 'N/A'}</td>
+                                    <td>${j.job_title}</td>
+                                    <td>${j.criteria.min_cgpa}</td>
+                                    <td>${j.criteria.branches.join(', ')}</td>
+                                    <td>${Utils.formatDate(j.posted_at)}</td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                `;
+            } catch (error) {
+                document.getElementById('jobsList').innerHTML = `<p class="text-danger">${error.message}</p>`;
+            }
+        }
+
+        // Tab change events
+        document.querySelector('button[data-bs-target="#students"]').addEventListener('click', loadStudents);
+        document.querySelector('button[data-bs-target="#companies"]').addEventListener('click', loadCompanies);
+        document.querySelector('button[data-bs-target="#jobs"]').addEventListener('click', loadJobs);
+        document.querySelector('button[data-bs-target="#reports"]').addEventListener('click', loadReports);
+    </script>
+</body>
+</html>

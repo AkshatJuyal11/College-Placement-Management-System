@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Company Dashboard - CPMS</title>
+    
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="/">CPMS - Company</a>
+            <div class="ms-auto">
+                <button class="btn btn-danger" onclick="Utils.logout()">Logout</button>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container-fluid py-4">
+        <div class="dashboard-header">
+            <h2>Company Dashboard</h2>
+            <p class="text-secondary mb-0">Manage job postings and review applicants</p>
+        </div>
+
+        <ul class="nav nav-tabs mb-4">
+            <li class="nav-item">
+                <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#profile">Company Profile</button>
+            </li>
+            <li class="nav-item">
+                <button class="nav-link" data-bs-toggle="tab" data-bs-target="#postJob">Post Job</button>
+            </li>
+            <li class="nav-item">
+                <button class="nav-link" data-bs-toggle="tab" data-bs-target="#myJobs">My Jobs</button>
+            </li>
+        </ul>
+
+        <div class="tab-content">
+            <!-- Profile Tab -->
+            <div class="tab-pane fade show active" id="profile">
+                <div class="card">
+                    <div class="card-header">
+                        <h4 class="mb-0">Company Profile</h4>
+                    </div>
+                    <div class="card-body">
+                        <form id="profileForm">
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">Company Name *</label>
+                                    <input type="text" class="form-control" id="company_name" required>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">Contact Person</label>
+                                    <input type="text" class="form-control" id="contact_person">
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">Email</label>
+                                    <input type="email" class="form-control" id="email">
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">Phone</label>
+                                    <input type="tel" class="form-control" id="phone">
+                                </div>
+                            </div>
+                            <button type="submit" class="btn btn-primary">Save Profile</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Post Job Tab -->
+            <div class="tab-pane fade" id="postJob">
+                <div class="card">
+                    <div class="card-header">
+                        <h4 class="mb-0">Post New Job Drive</h4>
+                    </div>
+                    <div class="card-body">
+                        <form id="jobForm">
+                            <div class="mb-3">
+                                <label class="form-label">Job Title *</label>
+                                <input type="text" class="form-control" id="job_title" required>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Job Description</label>
+                                <textarea class="form-control" id="job_description" rows="4"></textarea>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">Minimum CGPA *</label>
+                                    <input type="number" step="0.1" min="0" max="10" class="form-control" id="min_cgpa" required>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">Salary (Annual)</label>
+                                    <input type="text" class="form-control" id="salary" placeholder="e.g., 6-8 LPA">
+                                </div>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Eligible Branches *</label>
+                                <div>
+                                    <div class="form-check form-check-inline">
+                                        <input class="form-check-input" type="checkbox" value="CSE" id="branch_cse">
+                                        <label class="form-check-label" for="branch_cse">CSE</label>
+                                    </div>
+                                    <div class="form-check form-check-inline">
+                                        <input class="form-check-input" type="checkbox" value="IT" id="branch_it">
+                                        <label class="form-check-label" for="branch_it">IT</label>
+                                    </div>
+                                    <div class="form-check form-check-inline">
+                                        <input class="form-check-input" type="checkbox" value="ECE" id="branch_ece">
+                                        <label class="form-check-label" for="branch_ece">ECE</label>
+                                    </div>
+                                    <div class="form-check form-check-inline">
+                                        <input class="form-check-input" type="checkbox" value="EEE" id="branch_eee">
+                                        <label class="form-check-label" for="branch_eee">EEE</label>
+                                    </div>
+                                    <div class="form-check form-check-inline">
+                                        <input class="form-check-input" type="checkbox" value="MECH" id="branch_mech">
+                                        <label class="form-check-label" for="branch_mech">MECH</label>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Application Deadline</label>
+                                <input type="datetime-local" class="form-control" id="deadline">
+                            </div>
+                            <button type="submit" class="btn btn-primary">Post Job</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            <!-- My Jobs Tab -->
+            <div class="tab-pane fade" id="myJobs">
+                <div id="jobsList">
+                    <p class="text-center">Loading...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Applicants Modal -->
+    <div class="modal fade" id="applicantsModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Applicants</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body" id="applicantsContent">
+                    <p class="text-center">Loading...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="/static/js/main.js"></script>
+    <script>
+        if (!Utils.checkAuth() || TokenManager.getRole() !== 'company') {
+            window.location.href = '/login';
+        }
+
+        loadProfile();
+
+        // Profile Form
+        document.getElementById('profileForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const data = {
+                company_name: document.getElementById('company_name').value,
+                contact_person: document.getElementById('contact_person').value,
+                email: document.getElementById('email').value,
+                phone: document.getElementById('phone').value
+            };
+            
+            try {
+                await API.post('/company/profile', data);
+                Utils.showToast('Profile updated successfully!', 'success');
+            } catch (error) {
+                Utils.showToast(error.message, 'danger');
+            }
+        });
+
+        // Job Form
+        document.getElementById('jobForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const branches = [];
+            document.querySelectorAll('[id^="branch_"]:checked').forEach(cb => {
+                branches.push(cb.value);
+            });
+            
+            if (branches.length === 0) {
+                Utils.showToast('Please select at least one branch', 'warning');
+                return;
+            }
+            
+            const data = {
+                job_title: document.getElementById('job_title').value,
+                job_description: document.getElementById('job_description').value,
+                min_cgpa: parseFloat(document.getElementById('min_cgpa').value),
+                salary: document.getElementById('salary').value,
+                branches: branches,
+                deadline: document.getElementById('deadline').value
+            };
+            
+            try {
+                await API.post('/company/job', data);
+                Utils.showToast('Job posted successfully!', 'success');
+                document.getElementById('jobForm').reset();
+                loadJobs();
+            } catch (error) {
+                Utils.showToast(error.message, 'danger');
+            }
+        });
+
+        async function loadProfile() {
+            try {
+                const profile = await API.get('/company/profile');
+                document.getElementById('company_name').value = profile.company_name || '';
+                document.getElementById('contact_person').value = profile.contact_person || '';
+                document.getElementById('email').value = profile.email || '';
+                document.getElementById('phone').value = profile.phone || '';
+            } catch (error) {
+                console.log('Profile not found');
+            }
+        }
+
+        async function loadJobs() {
+            try {
+                const jobs = await API.get('/company/jobs');
+                const jobsList = document.getElementById('jobsList');
+                
+                if (jobs.length === 0) {
+                    jobsList.innerHTML = '<div class="card"><div class="card-body text-center text-secondary">No jobs posted yet</div></div>';
+                    return;
+                }
+                
+                jobsList.innerHTML = jobs.map(job => `
+                    <div class="card mb-3">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-start mb-3">
+                                <div>
+                                    <h5>${job.job_title}</h5>
+                                    <p class="text-secondary mb-2">${job.job_description || 'No description'}</p>
+                                    <div>
+                                        <span class="badge bg-info me-2">Min CGPA: ${job.criteria.min_cgpa}</span>
+                                        <span class="badge bg-primary">${job.criteria.branches.join(', ')}</span>
+                                        ${job.salary ? `<span class="badge bg-success ms-2">${job.salary}</span>` : ''}
+                                    </div>
+                                </div>
+                                <button class="btn btn-primary btn-sm" onclick="viewApplicants('${job._id}')">
+                                    View Applicants
+                                </button>
+                            </div>
+                            <small class="text-secondary">Posted: ${Utils.formatDate(job.posted_at)}</small>
+                        </div>
+                    </div>
+                `).join('');
+            } catch (error) {
+                document.getElementById('jobsList').innerHTML = `<div class="alert alert-danger">${error.message}</div>`;
+            }
+        }
+
+        async function viewApplicants(jobId) {
+            const modal = new bootstrap.Modal(document.getElementById('applicantsModal'));
+            modal.show();
+            
+            try {
+                const applicants = await API.get(`/company/applicants/${jobId}`);
+                const content = document.getElementById('applicantsContent');
+                
+                if (applicants.length === 0) {
+                    content.innerHTML = '<p class="text-center text-secondary">No applications yet</p>';
+                    return;
+                }
+                
+                content.innerHTML = `
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Name</th>
+                                <th>Roll No</th>
+                                <th>Branch</th>
+                                <th>CGPA</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${applicants.map(app => `
+                                <tr>
+                                    <td>${app.student.name}</td>
+                                    <td>${app.student.roll_no}</td>
+                                    <td>${app.student.branch}</td>
+                                    <td>${app.student.cgpa}</td>
+                                    <td>${getStatusBadge(app.status)}</td>
+                                    <td>
+                                        <button class="btn btn-success btn-sm" onclick="updateStatus('${app._id}', 'shortlisted')">Shortlist</button>
+                                        <button class="btn btn-danger btn-sm" onclick="updateStatus('${app._id}', 'rejected')">Reject</button>
+                                    </td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                `;
+            } catch (error) {
+                document.getElementById('applicantsContent').innerHTML = `<p class="text-danger">${error.message}</p>`;
+            }
+        }
+
+        async function updateStatus(applicationId, status) {
+            try {
+                await API.post('/company/update-status', {
+                    application_id: applicationId,
+                    status: status
+                });
+                Utils.showToast('Status updated successfully!', 'success');
+                // Reload the current modal content
+                const modalElement = document.getElementById('applicantsModal');
+                if (modalElement.classList.contains('show')) {
+                    // Find the job ID from the current modal and reload
+                    loadJobs();
+                }
+            } catch (error) {
+                Utils.showToast(error.message, 'danger');
+            }
+        }
+
+        function getStatusBadge(status) {
+            const badges = {
+                'applied': '<span class="badge bg-info">Applied</span>',
+                'shortlisted': '<span class="badge bg-success">Shortlisted</span>',
+                'rejected': '<span class="badge bg-danger">Rejected</span>'
+            };
+            return badges[status] || status;
+        }
+
+        document.querySelector('button[data-bs-target="#myJobs"]').addEventListener('click', loadJobs);
+    </script>
+</body>
+</html>
