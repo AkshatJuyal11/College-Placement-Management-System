@@ -46,6 +46,9 @@
                 <button class="nav-link" data-bs-toggle="tab" data-bs-target="#jobs">Job Drives</button>
             </li>
             <li class="nav-item">
+                <button class="nav-link" data-bs-toggle="tab" data-bs-target="#quizResults">Quiz Results</button>
+            </li>
+            <li class="nav-item">
                 <button class="nav-link" data-bs-toggle="tab" data-bs-target="#reports">Reports</button>
             </li>
         </ul>
@@ -113,6 +116,20 @@
                     </div>
                     <div class="card-body">
                         <div id="jobsList">
+                            <p class="text-center">Loading...</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quiz Results Tab -->
+            <div class="tab-pane fade" id="quizResults">
+                <div class="card">
+                    <div class="card-header">
+                        <h4 class="mb-0">All Quiz Results</h4>
+                    </div>
+                    <div class="card-body">
+                        <div id="quizResultsList">
                             <p class="text-center">Loading...</p>
                         </div>
                     </div>
@@ -349,6 +366,9 @@
                                     <td>${s.cgpa || 'N/A'}</td>
                                     <td>${s.resume_url ? '✅' : '❌'}</td>
                                     <td>${s.placed ? '<span class="badge bg-success">Placed</span>' : '<span class="badge bg-warning">Not Placed</span>'}</td>
+                                    <td>
+                                        <button class="btn btn-sm ${s.placed ? 'btn-secondary' : 'btn-success'}" onclick="setStudentPlacement('${s._id}', ${s.placed})">${s.placed ? 'Unmark Placed' : 'Mark Placed'}</button>
+                                    </td>
                                 </tr>
                             `).join('')}
                         </tbody>
@@ -435,10 +455,67 @@
             }
         }
 
+        async function loadQuizResults() {
+            try {
+                const results = await API.get('/admin/quiz-results');
+                const resultsList = document.getElementById('quizResultsList');
+                
+                if (results.length === 0) {
+                    resultsList.innerHTML = '<p class="text-center text-secondary">No quiz results yet</p>';
+                    return;
+                }
+                
+                resultsList.innerHTML = `
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Student</th>
+                                <th>Roll No</th>
+                                <th>Company</th>
+                                <th>Job Title</th>
+                                <th>Quiz Title</th>
+                                <th>Score</th>
+                                <th>Completed At</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${results.map(r => `
+                                <tr>
+                                    <td>${r.student.name}</td>
+                                    <td>${r.student.roll_no}</td>
+                                    <td>${r.company.company_name}</td>
+                                    <td>${r.job.job_title}</td>
+                                    <td>${r.quiz.title}</td>
+                                    <td><span class="badge bg-primary">${r.score}/${r.total}</span></td>
+                                    <td>${Utils.formatDate(r.completed_at)}</td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                `;
+            } catch (error) {
+                document.getElementById('quizResultsList').innerHTML = `<p class="text-danger">${error.message}</p>`;
+            }
+        }
+
+        async function setStudentPlacement(studentId, isPlaced) {
+            try {
+                await API.post('/admin/student-placement', {
+                    student_id: studentId,
+                    placed: !isPlaced
+                });
+                Utils.showToast('Student placement status updated!', 'success');
+                loadStudents();
+            } catch (error) {
+                Utils.showToast(error.message, 'danger');
+            }
+        }
+
         // Tab change events
         document.querySelector('button[data-bs-target="#students"]').addEventListener('click', loadStudents);
         document.querySelector('button[data-bs-target="#companies"]').addEventListener('click', loadCompanies);
         document.querySelector('button[data-bs-target="#jobs"]').addEventListener('click', loadJobs);
+        document.querySelector('button[data-bs-target="#quizResults"]').addEventListener('click', loadQuizResults);
         document.querySelector('button[data-bs-target="#reports"]').addEventListener('click', loadReports);
     </script>
 </body>

@@ -35,6 +35,9 @@
             <li class="nav-item">
                 <button class="nav-link" data-bs-toggle="tab" data-bs-target="#myJobs">My Jobs</button>
             </li>
+            <li class="nav-item">
+                <button class="nav-link" data-bs-toggle="tab" data-bs-target="#quizzes">Quizzes</button>
+            </li>
         </ul>
 
         <div class="tab-content">
@@ -137,6 +140,81 @@
             <div class="tab-pane fade" id="myJobs">
                 <div id="jobsList">
                     <p class="text-center">Loading...</p>
+                </div>
+            </div>
+
+            <!-- Quizzes Tab -->
+            <div class="tab-pane fade" id="quizzes">
+                <div class="row">
+                    <div class="col-md-4">
+                        <div class="card">
+                            <div class="card-header">
+                                <h5>Create Quiz</h5>
+                            </div>
+                            <div class="card-body">
+                                <form id="quizForm">
+                                    <div class="mb-3">
+                                        <label class="form-label">Select Job</label>
+                                        <select class="form-select" id="quizJobId" required>
+                                            <option value="">Choose a job...</option>
+                                        </select>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label">Quiz Title</label>
+                                        <input type="text" class="form-control" id="quizTitle" required>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label">Duration (minutes)</label>
+                                        <input type="number" class="form-control" id="quizDuration" value="30" min="5" max="120" required>
+                                    </div>
+                                    <div id="questionsContainer">
+                                        <div class="question-item mb-3 p-3 border rounded">
+                                            <h6>Question 1</h6>
+                                            <div class="mb-2">
+                                                <input type="text" class="form-control question-text" placeholder="Enter question" required>
+                                            </div>
+                                            <div class="mb-2">
+                                                <input type="text" class="form-control option-input" placeholder="Option A" required>
+                                            </div>
+                                            <div class="mb-2">
+                                                <input type="text" class="form-control option-input" placeholder="Option B" required>
+                                            </div>
+                                            <div class="mb-2">
+                                                <input type="text" class="form-control option-input" placeholder="Option C" required>
+                                            </div>
+                                            <div class="mb-2">
+                                                <input type="text" class="form-control option-input" placeholder="Option D" required>
+                                            </div>
+                                            <div class="mb-2">
+                                                <label class="form-label">Correct Answer</label>
+                                                <select class="form-select correct-answer" required>
+                                                    <option value="">Select correct answer</option>
+                                                    <option value="0">A</option>
+                                                    <option value="1">B</option>
+                                                    <option value="2">C</option>
+                                                    <option value="3">D</option>
+                                                </select>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <button type="button" class="btn btn-outline-primary btn-sm me-2" onclick="addQuestion()">Add Question</button>
+                                    <button type="submit" class="btn btn-primary">Create Quiz</button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-8">
+                        <div class="card">
+                            <div class="card-header">
+                                <h5>Quiz Results</h5>
+                            </div>
+                            <div class="card-body">
+                                <div id="quizResults">
+                                    <p class="text-center">Select a quiz to view results</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -298,10 +376,12 @@
                                     <td>${app.student.roll_no}</td>
                                     <td>${app.student.branch}</td>
                                     <td>${app.student.cgpa}</td>
+                                    <td>${app.student.placed ? '<span class="badge bg-success">Placed</span>' : '<span class="badge bg-warning">Not Placed</span>'}</td>
                                     <td>${getStatusBadge(app.status)}</td>
                                     <td>
                                         <button class="btn btn-success btn-sm" onclick="updateStatus('${app._id}', 'shortlisted')">Shortlist</button>
                                         <button class="btn btn-danger btn-sm" onclick="updateStatus('${app._id}', 'rejected')">Reject</button>
+                                        <button class="btn btn-secondary btn-sm" onclick="setPlaced('${app.student._id}', ${app.student.placed})">${app.student.placed ? 'Unplace' : 'Set Placed'}</button>
                                     </td>
                                 </tr>
                             `).join('')}
@@ -331,6 +411,24 @@
             }
         }
 
+        async function setPlaced(studentId, isPlaced) {
+            try {
+                await API.post('/company/set-placed', {
+                    student_id: studentId,
+                    placed: !isPlaced
+                });
+                Utils.showToast('Placement status updated!', 'success');
+                loadJobs();
+                const modalElement = document.getElementById('applicantsModal');
+                if (modalElement.classList.contains('show')) {
+                    const bootstrapModal = bootstrap.Modal.getInstance(modalElement);
+                    if (bootstrapModal) bootstrapModal.hide();
+                }
+            } catch (error) {
+                Utils.showToast(error.message, 'danger');
+            }
+        }
+
         function getStatusBadge(status) {
             const badges = {
                 'applied': '<span class="badge bg-info">Applied</span>',
@@ -340,7 +438,194 @@
             return badges[status] || status;
         }
 
+        // Quiz Functions
+        let questionCount = 1;
+
+        function addQuestion() {
+            questionCount++;
+            const container = document.getElementById('questionsContainer');
+            const questionHtml = `
+                <div class="question-item mb-3 p-3 border rounded">
+                    <h6>Question ${questionCount}</h6>
+                    <div class="mb-2">
+                        <input type="text" class="form-control question-text" placeholder="Enter question" required>
+                    </div>
+                    <div class="mb-2">
+                        <input type="text" class="form-control option-input" placeholder="Option A" required>
+                    </div>
+                    <div class="mb-2">
+                        <input type="text" class="form-control option-input" placeholder="Option B" required>
+                    </div>
+                    <div class="mb-2">
+                        <input type="text" class="form-control option-input" placeholder="Option C" required>
+                    </div>
+                    <div class="mb-2">
+                        <input type="text" class="form-control option-input" placeholder="Option D" required>
+                    </div>
+                    <div class="mb-2">
+                        <label class="form-label">Correct Answer</label>
+                        <select class="form-select correct-answer" required>
+                            <option value="">Select correct answer</option>
+                            <option value="0">A</option>
+                            <option value="1">B</option>
+                            <option value="2">C</option>
+                            <option value="3">D</option>
+                        </select>
+                    </div>
+                    <button type="button" class="btn btn-outline-danger btn-sm" onclick="removeQuestion(this)">Remove</button>
+                </div>
+            `;
+            container.insertAdjacentHTML('beforeend', questionHtml);
+        }
+
+        function removeQuestion(button) {
+            button.closest('.question-item').remove();
+            questionCount--;
+            updateQuestionNumbers();
+        }
+
+        function updateQuestionNumbers() {
+            const questions = document.querySelectorAll('.question-item h6');
+            questions.forEach((h6, index) => {
+                h6.textContent = `Question ${index + 1}`;
+            });
+        }
+
+        async function loadJobsForQuiz() {
+            try {
+                const jobs = await API.get('/company/jobs');
+                const select = document.getElementById('quizJobId');
+                select.innerHTML = '<option value="">Choose a job...</option>';
+                
+                jobs.forEach(job => {
+                    const option = document.createElement('option');
+                    option.value = job._id;
+                    option.textContent = job.job_title;
+                    select.appendChild(option);
+                });
+            } catch (error) {
+                console.error('Error loading jobs:', error);
+            }
+        }
+
+        // Quiz Form Submission
+        document.getElementById('quizForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const questions = [];
+            const questionItems = document.querySelectorAll('.question-item');
+            
+            questionItems.forEach(item => {
+                const questionText = item.querySelector('.question-text').value;
+                const options = Array.from(item.querySelectorAll('.option-input')).map(input => input.value);
+                const correct = parseInt(item.querySelector('.correct-answer').value);
+                
+                questions.push({
+                    question: questionText,
+                    options: options,
+                    correct: correct
+                });
+            });
+            
+            const data = {
+                job_id: document.getElementById('quizJobId').value,
+                title: document.getElementById('quizTitle').value,
+                duration: parseInt(document.getElementById('quizDuration').value),
+                questions: questions
+            };
+            
+            try {
+                await API.post('/company/quiz', data);
+                Utils.showToast('Quiz created successfully!', 'success');
+                document.getElementById('quizForm').reset();
+                document.getElementById('questionsContainer').innerHTML = `
+                    <div class="question-item mb-3 p-3 border rounded">
+                        <h6>Question 1</h6>
+                        <div class="mb-2">
+                            <input type="text" class="form-control question-text" placeholder="Enter question" required>
+                        </div>
+                        <div class="mb-2">
+                            <input type="text" class="form-control option-input" placeholder="Option A" required>
+                        </div>
+                        <div class="mb-2">
+                            <input type="text" class="form-control option-input" placeholder="Option B" required>
+                        </div>
+                        <div class="mb-2">
+                            <input type="text" class="form-control option-input" placeholder="Option C" required>
+                        </div>
+                        <div class="mb-2">
+                            <input type="text" class="form-control option-input" placeholder="Option D" required>
+                        </div>
+                        <div class="mb-2">
+                            <label class="form-label">Correct Answer</label>
+                            <select class="form-select correct-answer" required>
+                                <option value="">Select correct answer</option>
+                                <option value="0">A</option>
+                                <option value="1">B</option>
+                                <option value="2">C</option>
+                                <option value="3">D</option>
+                            </select>
+                        </div>
+                    </div>
+                `;
+                questionCount = 1;
+                loadQuizzes();
+            } catch (error) {
+                Utils.showToast(error.message, 'danger');
+            }
+        });
+
+        async function loadQuizzes() {
+            try {
+                const jobs = await API.get('/company/jobs');
+                const resultsDiv = document.getElementById('quizResults');
+                
+                if (jobs.length === 0) {
+                    resultsDiv.innerHTML = '<p class="text-center text-secondary">No jobs found</p>';
+                    return;
+                }
+                
+                resultsDiv.innerHTML = jobs.map(job => `
+                    <div class="mb-3">
+                        <h6>${job.job_title}</h6>
+                        <button class="btn btn-sm btn-outline-primary me-2" onclick="viewQuizResults('${job._id}')">View Quiz Results</button>
+                    </div>
+                `).join('');
+            } catch (error) {
+                resultsDiv.innerHTML = `<p class="text-danger">${error.message}</p>`;
+            }
+        }
+
+        async function viewQuizResults(jobId) {
+            try {
+                const results = await API.get(`/company/quiz-results/${jobId}`);
+                const resultsDiv = document.getElementById('quizResults');
+                
+                if (results.length === 0) {
+                    resultsDiv.innerHTML += '<p class="text-center text-secondary">No quiz results yet</p>';
+                    return;
+                }
+                
+                const resultsHtml = results.map(result => `
+                    <div class="card mb-2">
+                        <div class="card-body">
+                            <h6>Score: ${result.score}/${result.total}</h6>
+                            <small class="text-secondary">Completed: ${Utils.formatDate(result.completed_at)}</small>
+                        </div>
+                    </div>
+                `).join('');
+                
+                resultsDiv.innerHTML = resultsHtml;
+            } catch (error) {
+                resultsDiv.innerHTML = `<p class="text-danger">${error.message}</p>`;
+            }
+        }
+
         document.querySelector('button[data-bs-target="#myJobs"]').addEventListener('click', loadJobs);
+        document.querySelector('button[data-bs-target="#quizzes"]').addEventListener('click', () => {
+            loadJobsForQuiz();
+            loadQuizzes();
+        });
     </script>
 </body>
 </html>

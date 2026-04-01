@@ -2,6 +2,36 @@ from datetime import datetime
 from bson import ObjectId
 from werkzeug.security import generate_password_hash, check_password_hash
 
+class Quiz:
+    """Quiz model for job screenings"""
+    @staticmethod
+    def create(db, job_id, company_id, data):
+        quiz = {
+            'job_id': ObjectId(job_id),
+            'company_id': ObjectId(company_id),
+            'title': data.get('title'),
+            'questions': data.get('questions'), # Array of {question, options, correct}
+            'duration': int(data.get('duration', 10)), # in minutes
+            'created_at': datetime.utcnow()
+        }
+        return db.quizzes.insert_one(quiz).inserted_id
+
+    @staticmethod
+    def get_by_job(db, job_id):
+        return db.quizzes.find_one({'job_id': ObjectId(job_id)})
+
+class QuizResult:
+    """Model to store student quiz performance"""
+    @staticmethod
+    def save_result(db, quiz_id, student_id, score, total):
+        result = {
+            'quiz_id': ObjectId(quiz_id),
+            'student_id': ObjectId(student_id),
+            'score': score,
+            'total': total,
+            'completed_at': datetime.utcnow()
+        }
+        return db.quiz_results.insert_one(result).inserted_id
 class User:
     """User model for authentication"""
     
@@ -177,10 +207,16 @@ class Application:
         if existing:
             return None, "Already applied to this job"
         
+        # Check if job has a quiz
+        quiz = db.quizzes.find_one({'job_id': ObjectId(job_id)})
+        quiz_required = quiz is not None
+        
         application = {
             'student_id': ObjectId(student_id),
             'job_id': ObjectId(job_id),
             'status': 'applied',
+            'quiz_required': quiz_required,
+            'quiz_completed': False,
             'applied_at': datetime.utcnow()
         }
         

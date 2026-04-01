@@ -1,10 +1,39 @@
 from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required, get_jwt_identity, get_jwt
-from models.database import Company, JobDrive, Application
+from models.database import Company, Student, JobDrive, Application, Quiz
 from bson import ObjectId
 from datetime import datetime
 
 company_bp = Blueprint('company', __name__)
+@company_bp.route('/quiz', methods=['POST'])
+@jwt_required()
+def add_quiz():
+    check = require_company() #
+    if check: return check
+    
+    data = request.get_json()
+    job_id = data.get('job_id')
+    
+    from flask import current_app
+    db = current_app.config['db']
+    
+    company = Company.get_by_user_id(db, get_jwt_identity()) #
+    
+    quiz_id = Quiz.create(db, job_id, company['_id'], data)
+    return jsonify({'message': 'Quiz added successfully', 'quiz_id': str(quiz_id)}), 201
+
+@company_bp.route('/quiz-results/<job_id>', methods=['GET'])
+@jwt_required()
+def view_quiz_results(job_id):
+    from flask import current_app
+    db = current_app.config['db']
+
+    quiz = db.quizzes.find_one({'job_id': ObjectId(job_id)})
+    if not quiz:
+        return jsonify({'error': 'Quiz not found for this job'}), 404
+
+    results = list(db.quiz_results.find({'quiz_id': quiz['_id']}))
+    return jsonify(convert_objectid_to_str(results)), 200
 
 def convert_objectid_to_str(obj):
     """Convert ObjectId to string recursively"""
@@ -165,7 +194,30 @@ def get_applicants(job_id):
         applicants = convert_objectid_to_str(applicants)
         
         return jsonify(applicants), 200
-        
+
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@company_bp.route('/set-placed', methods=['POST'])
+@jwt_required()
+def set_student_placed():
+    check = require_company()
+    if check:
+        return check
+
+    try:
+        data = request.get_json()
+        if not data.get('student_id') or 'placed' not in data:
+            return jsonify({'error': 'student_id and placed are required'}), 400
+
+        from flask import current_app
+        db = current_app.config['db']
+
+        # validate company->job ownership optional, skip for simplicity
+        Student.update_placement_status(db, data['student_id'], bool(data['placed']))
+
+        return jsonify({'message': 'Student placement status updated successfully'}), 200
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 

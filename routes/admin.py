@@ -1,6 +1,6 @@
 from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required, get_jwt_identity, get_jwt
-from models.database import Student, Company, JobDrive, Application
+from models.database import Student, Company, JobDrive, Application, Quiz, QuizResult
 from bson import ObjectId
 from datetime import datetime
 
@@ -210,5 +210,81 @@ def get_reports():
         
         return jsonify(report), 200
         
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@admin_bp.route('/quiz-results', methods=['GET'])
+@jwt_required()
+def get_all_quiz_results():
+    """Get all quiz results for admin"""
+    check = require_admin()
+    if check:
+        return check
+    
+    try:
+        from flask import current_app
+        db = current_app.config['db']
+        
+        # Aggregate quiz results with student and job details
+        pipeline = [
+            {'$lookup': {
+                'from': 'quizzes',
+                'localField': 'quiz_id',
+                'foreignField': '_id',
+                'as': 'quiz'
+            }},
+            {'$unwind': '$quiz'},
+            {'$lookup': {
+                'from': 'job_drives',
+                'localField': 'quiz.job_id',
+                'foreignField': '_id',
+                'as': 'job'
+            }},
+            {'$unwind': '$job'},
+            {'$lookup': {
+                'from': 'companies',
+                'localField': 'job.company_id',
+                'foreignField': '_id',
+                'as': 'company'
+            }},
+            {'$unwind': '$company'},
+            {'$lookup': {
+                'from': 'students',
+                'localField': 'student_id',
+                'foreignField': '_id',
+                'as': 'student'
+            }},
+            {'$unwind': '$student'},
+            {'$sort': {'completed_at': -1}}
+        ]
+        
+        results = list(db.quiz_results.aggregate(pipeline))
+        results = convert_objectid_to_str(results)
+        
+        return jsonify(results), 200
+        
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@admin_bp.route('/student-placement', methods=['POST'])
+@jwt_required()
+def admin_set_student_placed():
+    check = require_admin()
+    if check:
+        return check
+
+    try:
+        data = request.get_json()
+        if not data.get('student_id') or 'placed' not in data:
+            return jsonify({'error': 'student_id and placed are required'}), 400
+
+        from flask import current_app
+        db = current_app.config['db']
+
+        Student.update_placement_status(db, data['student_id'], bool(data['placed']))
+
+        return jsonify({'message': 'Student placed status updated successfully'}), 200
     except Exception as e:
         return jsonify({'error': str(e)}), 500

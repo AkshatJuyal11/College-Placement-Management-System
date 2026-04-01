@@ -1,6 +1,6 @@
 from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required, get_jwt_identity, get_jwt
-from models.database import Student, JobDrive, Application
+from models.database import Student, JobDrive, Application, Quiz, QuizResult
 from utils.helpers import save_resume, validate_cgpa
 from bson import ObjectId
 from datetime import datetime
@@ -212,7 +212,20 @@ def get_applications():
         
         # Get applications
         applications = Application.get_by_student(db, str(student['_id']))
-        
+
+        # Enrich with quiz status
+        for app in applications:
+            quiz = db.quizzes.find_one({'job_id': ObjectId(app['job_id'])})
+            app['quiz_required'] = bool(quiz)
+            if quiz:
+                quiz_result = db.quiz_results.find_one({
+                    'quiz_id': quiz['_id'],
+                    'student_id': ObjectId(student['_id'])
+                })
+                app['quiz_completed'] = bool(quiz_result)
+            else:
+                app['quiz_completed'] = False
+
         # Convert all ObjectId fields to strings
         applications = convert_objectid_to_str(applications)
         
@@ -220,3 +233,41 @@ def get_applications():
         
     except Exception as e:
         return jsonify({'error': str(e)}), 500  
+
+@student_bp.route('/quiz/<job_id>', methods=['GET'])
+@jwt_required()
+def get_quiz(job_id):
+    from flask import current_app
+    db = current_app.config['db']
+    quiz = Quiz.get_by_job(db, job_id)
+    if not quiz:
+        return jsonify({'error': 'No quiz found for this job'}), 404
+    return jsonify(convert_objectid_to_str(quiz)), 200 #
+
+@student_bp.route('/submit-quiz', methods=['POST'])
+@jwt_required()
+def submit_quiz():
+    data = request.get_json()
+    from flask import current_app
+    db = current_app.config['db']
+    
+    # Simple server-side grading logic
+    quiz = db.quizzes.find_one({'_id': ObjectId(data['quiz_id'])})
+    if not quiz:
+        return jsonify({'error': 'Quiz not found'}), 404
+
+    score = 0
+    for i, q in enumerate(quiz['questions']):
+        if i < len(data.get('answers', [])) and data['answers'][i] == q['correct']:
+            score += 1
+
+    student = Student.get_by_user_id(db, get_jwt_identity())
+    result_id = QuizResult.save_result(db, data['quiz_id'], student['_id'], score, len(quiz['questions']))
+
+    # Mark application quiz completed
+    db.applications.update_one(
+        {'student_id': student['_id'], 'job_id': quiz['job_id']},
+        {'$set': {'quiz_completed': True}}
+    )
+
+    return jsonify({'message': 'Quiz submitted', 'score': score, 'total': len(quiz['questions']), 'result_id': str(result_id)}), 200
