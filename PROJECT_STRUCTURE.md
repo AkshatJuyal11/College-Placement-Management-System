@@ -18,7 +18,7 @@ cpms/
 ├── VIVA_GUIDE.md                   # Viva preparation questions & answers
 │
 ├── models/                         # Database models
-│   └── database.py                # MongoDB models (User, Student, Company, JobDrive, Application)
+│   └── database.py                # MongoDB models (User, Student, Company, JobDrive, Application, Quiz, QuizResult)
 │
 ├── routes/                         # API route blueprints
 │   ├── auth.py                    # Authentication routes (/api/auth/*)
@@ -102,10 +102,14 @@ cpms/
 - GET `/api/student/jobs` - Get eligible jobs
 - POST `/api/student/apply` - Apply for job
 - GET `/api/student/applications` - Get applications
+- GET `/api/student/quiz/<job_id>` - Retrieve quiz for a job
+- POST `/api/student/submit-quiz` - Submit quiz answers
 
 **routes/company.py**
 - GET/POST `/api/company/profile` - Profile management
 - POST `/api/company/job` - Create job drive
+- POST `/api/company/quiz` - Create screening quiz for a job drive
+- GET `/api/company/quiz-results/<job_id>` - View quiz results for a job drive
 - GET `/api/company/jobs` - Get posted jobs
 - GET `/api/company/applicants/<job_id>` - Get applicants
 - POST `/api/company/update-status` - Update application status

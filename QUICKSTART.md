@@ -94,14 +94,17 @@ Open your browser and go to: **http://localhost:5000**
 3. Upload resume (PDF only)
 4. View available jobs
 5. Apply for jobs
-6. Check application status
+6. Complete any assigned screening quizzes for applied jobs
+7. Check application and quiz status
 
 #### As Company:
 1. Login with company credentials
 2. Complete company profile
 3. Post a job drive (set CGPA, branches, salary)
-4. View applicants
-5. Shortlist or reject candidates
+4. Create a screening quiz for a job drive
+5. View applicants
+6. Review applicant quiz results
+7. Shortlist or reject candidates
 
 #### As Admin:
 1. Login with admin credentials
@@ -186,16 +189,19 @@ Use this checklist to verify everything works:
 - [ ] Upload resume (PDF)
 - [ ] View eligible jobs
 - [ ] Apply for a job
+- [ ] Take assigned screening quizzes
 - [ ] See "Already applied" error on duplicate application
-- [ ] View application status
+- [ ] View application and quiz status
 
 ### Company Flow
 - [ ] Register as company
 - [ ] Login successfully
 - [ ] Complete company profile
 - [ ] Post a job drive
+- [ ] Create a screening quiz for a job drive
 - [ ] View posted jobs
 - [ ] See applicants list
+- [ ] Review applicant quiz results
 - [ ] Shortlist a candidate
 - [ ] Reject a candidate
 

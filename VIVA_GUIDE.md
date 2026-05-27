@@ -38,6 +38,11 @@ This guide contains commonly asked questions during project viva/presentation al
 - Role-based access control (RBAC)
 - Student profile management with resume upload
 - Automated job eligibility matching based on CGPA and branch
+- Screening quiz workflows for companies, with student quiz attempts and performance tracking
+
+### Q5: What is the screening quiz feature?
+**Answer**: The screening quiz feature enables companies to attach a timed multiple-choice assessment to a job drive. Students can access the quiz after applying, submit answers, and receive instant scores. Admins and companies can then review performance data to make more informed shortlisting decisions.
+
 - Application tracking with status updates
 - Company dashboard for applicant management
 - Admin analytics with charts and reports

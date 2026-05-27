@@ -189,12 +189,130 @@ Expected Response (200):
             "company_name": "Google"
         },
         "status": "applied",
+        "quiz_required": true,
+        "quiz_completed": false,
         "applied_at": "2024-01-15T10:30:00"
     }
 ]
 ```
 
-### 4. Company APIs (Use Company Token)
+### 5. Quiz APIs
+
+#### Get Quiz for a Job
+```
+GET http://localhost:5000/api/student/quiz/{job_id}
+
+Headers:
+Authorization: Bearer {STUDENT_TOKEN}
+
+Expected Response (200):
+{
+    "_id": "...",
+    "job_id": "...",
+    "company_id": "...",
+    "questions": [
+        {
+            "question": "What is Python?",
+            "options": ["Language", "Library", "Framework", "Database"],
+            "correct": 0
+        }
+    ],
+    "duration": 15
+}
+```
+
+#### Submit Quiz Answers
+```
+POST http://localhost:5000/api/student/submit-quiz
+
+Headers:
+Content-Type: application/json
+Authorization: Bearer {STUDENT_TOKEN}
+
+Body (JSON):
+{
+    "quiz_id": "{QUIZ_ID}",
+    "answers": [0, 2, 1, 3]
+}
+
+Expected Response (200):
+{
+    "message": "Quiz submitted",
+    "score": 3,
+    "total": 4,
+    "result_id": "..."
+}
+```
+
+#### Create a Quiz (Company)
+```
+POST http://localhost:5000/api/company/quiz
+
+Headers:
+Content-Type: application/json
+Authorization: Bearer {COMPANY_TOKEN}
+
+Body (JSON):
+{
+    "job_id": "{JOB_ID}",
+    "questions": [
+        {
+            "question": "What is HTTP?",
+            "options": ["Protocol", "Language", "Database", "OS"],
+            "correct": 0
+        }
+    ],
+    "duration": 15
+}
+
+Expected Response (201):
+{
+    "message": "Quiz added successfully",
+    "quiz_id": "..."
+}
+```
+
+#### View Quiz Results for Job (Company)
+```
+GET http://localhost:5000/api/company/quiz-results/{job_id}
+
+Headers:
+Authorization: Bearer {COMPANY_TOKEN}
+
+Expected Response (200):
+[
+    {
+        "quiz_id": "...",
+        "student_id": "...",
+        "score": 4,
+        "total": 5,
+        "completed_at": "2024-01-15T10:30:00"
+    }
+]
+```
+
+#### View All Quiz Results (Admin)
+```
+GET http://localhost:5000/api/admin/quiz-results
+
+Headers:
+Authorization: Bearer {ADMIN_TOKEN}
+
+Expected Response (200):
+[
+    {
+        "quiz_id": "...",
+        "student": {"name": "John Doe"},
+        "job": {"job_title": "Software Engineer"},
+        "company": {"company_name": "Google"},
+        "score": 4,
+        "total": 5,
+        "completed_at": "2024-01-15T10:30:00"
+    }
+]
+```
+
+### 6. Company APIs (Use Company Token)
 
 #### Update Company Profile
 ```
